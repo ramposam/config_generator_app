@@ -30,7 +30,7 @@ def switch_dataset_pages(generate_standard_configs=None):
     col1, col2, col3 = st.columns([3, 6, 3])
 
     with col3:
-        dataset_configs_generate = st.button("Generate Configs", key="dataset_configs_generate",use_container_width=True)
+        dataset_configs = st.button("Generate Configs", key="dataset_configs_generate",use_container_width=True)
 
-    if dataset_configs_generate:
+    if dataset_configs:
         GenerateConfigs(st.session_state.dataset_form_data).generate()

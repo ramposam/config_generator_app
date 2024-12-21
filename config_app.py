@@ -16,8 +16,8 @@ if __name__ == "__main__":
 
     initialize_session()
 
-    rules = st.Page("pages/1_rules.py", title=" Rules", icon=":material/house:")
-    datasets = st.Page("pages/2_dataset_configs.py", title=" Dataset Configs", icon=":material/arrow_forward:")
+    datasets = st.Page("pages/1_dataset_configs.py", title=" Dataset Configs", icon=":material/arrow_forward:")
+    rules = st.Page("pages/2_rules.py", title=" Rules", icon=":material/house:")
 
-    pg = st.navigation([rules,datasets])
+    pg = st.navigation([datasets,rules])
     pg.run()

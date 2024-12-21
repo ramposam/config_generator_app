@@ -4,6 +4,7 @@ import tempfile
 import zipfile
 
 import streamlit as st
+from core_utils.dag_generator import DagGenerator
 
 from core_utils.generate_configs import ConfigTemplate
 
@@ -51,9 +52,14 @@ class GenerateConfigs:
 
         configs_tmp_dir =  tempfile.mkdtemp()
 
-        configs_dir = ConfigTemplate(bucket=bucket, file_path=file_path,dataset_name=dataset_name,
-                       start_date=start_date_str, catchup=True, datetime_format=file_date_format). \
-                       generate_configs(configs_tmp_dir)
+        configs_gen = ConfigTemplate(bucket=bucket, file_path=file_path,dataset_name=dataset_name,
+                       start_date=start_date_str, catchup=True, datetime_format=file_date_format)
+
+        configs_dir = configs_gen.generate_configs(configs_tmp_dir)
+
+        dag_gen = DagGenerator(configs_dir=configs_dir, dataset_name=dataset_name)
+
+        dag_gen.generate_dag_ddls()
 
         zipped_file = self.zipit(configs_dir, True)
 
