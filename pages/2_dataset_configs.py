@@ -1,0 +1,3 @@
+from dataset_pages.dataset_page import switch_dataset_pages
+
+switch_dataset_pages()
