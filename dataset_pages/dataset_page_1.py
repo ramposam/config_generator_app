@@ -2,7 +2,7 @@ import os
 import traceback
 
 
-from helpers.constants import yes_no_options, bucket_list
+from helpers.constants import yes_no_options, bucket_list, pipelines_options, stage_name_options
 from helpers.utils import get_df_from_query_with_error, dummy
 import streamlit as st
 
@@ -43,6 +43,7 @@ def page_1():
                 st.session_state.dataset_form_data["s3_bucket"] = st.selectbox("S3 Bucket",
                                                                                options=bucket_list,
                                                                                index=0)
+                st.session_state.dataset_form_data["s3_dataset_dir"] = st.text_input("S3 dataset folder")
 
                 st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",
                                                                                value="YYYYMMDD")
@@ -54,6 +55,13 @@ def page_1():
                 st.session_state.dataset_form_data["start_date"] = st.date_input(
                     f'DAG Start Date'
                 )
+                st.session_state.dataset_form_data["schedule_interval"] = st.text_input("Schedule Interval",
+                                                                                       value="* * * * *")
+
+                st.session_state.dataset_form_data["pipeline_type"] = st.selectbox("Generate Pipelines Using:",
+                                                                                options=pipelines_options,
+                                                                               index=0)
+
 
                 if st.session_state.dataset_form_data.get("dataset_name") is not None:
                     st.session_state.dataset_form_data["dataset_name"] = st.session_state.dataset_form_data["dataset_name"].replace(" ","_").lower()

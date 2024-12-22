@@ -8,6 +8,9 @@ from core_utils.dag_generator import DagGenerator
 
 from core_utils.generate_configs import ConfigTemplate
 
+from helpers.variables import Variables
+
+
 class GenerateConfigs:
 
     def __init__(self,form_data):
@@ -49,17 +52,21 @@ class GenerateConfigs:
         start_date_str = self.form_data["start_date"].strftime("%Y,%m,%d")
         file_date_format = self.form_data["file_date_format"]
         dataset_name = self.form_data["dataset_name"]
+        pipeline_type = self.form_data["pipeline_type"]
+        schedule_interval = self.form_data["schedule_interval"]
+        dataset_dir = self.form_data["s3_dataset_dir"]
 
         configs_tmp_dir =  tempfile.mkdtemp()
 
-        configs_gen = ConfigTemplate(bucket=bucket, file_path=file_path,dataset_name=dataset_name,
-                       start_date=start_date_str, catchup=True, datetime_format=file_date_format)
+        configs_gen = ConfigTemplate( bucket=bucket,pipeline_type=pipeline_type, file_path=file_path,dataset_name=dataset_name,
+                       start_date=start_date_str, catchup=True, datetime_format=file_date_format,
+                                     schedule_interval=schedule_interval)
 
         configs_dir = configs_gen.generate_configs(configs_tmp_dir)
 
-        dag_gen = DagGenerator(configs_dir=configs_dir, dataset_name=dataset_name)
-
-        dag_gen.generate_dag_ddls()
+        if not pipeline_type == "SNOWPIPE":
+            dag_gen = DagGenerator(configs_dir=configs_dir, dataset_name=dataset_name)
+            dag_gen.generate_dag_ddls()
 
         zipped_file = self.zipit(configs_dir, True)
 
