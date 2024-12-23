@@ -54,13 +54,18 @@ class GenerateConfigs:
         dataset_name = self.form_data["dataset_name"]
         pipeline_type = self.form_data["pipeline_type"]
         schedule_interval = self.form_data["schedule_interval"]
-        dataset_dir = self.form_data["s3_dataset_dir"]
+        s3_dataset_path = self.form_data["s3_dataset_path"]
+        aws_access_key = self.form_data.get("aws_access_key")
+        aws_secret_key = self.form_data.get("aws_secret_key")
+        snowflake_stage_name = self.form_data.get("snowflake_stage_name")
 
         configs_tmp_dir =  tempfile.mkdtemp()
 
-        configs_gen = ConfigTemplate( bucket=bucket,pipeline_type=pipeline_type, file_path=file_path,dataset_name=dataset_name,
-                       start_date=start_date_str, catchup=True, datetime_format=file_date_format,
-                                     schedule_interval=schedule_interval)
+        configs_gen = ConfigTemplate( bucket=bucket,pipeline_type=pipeline_type, file_path=file_path,
+                                      dataset_name=dataset_name, start_date=start_date_str, catchup=True,
+                                      datetime_format=file_date_format, aws_access_key = aws_access_key,
+                                      aws_secret_key=aws_secret_key, schedule_interval=schedule_interval,
+                                      s3_dataset_path=s3_dataset_path, snowflake_stage_name=snowflake_stage_name)
 
         configs_dir = configs_gen.generate_configs(configs_tmp_dir)
 

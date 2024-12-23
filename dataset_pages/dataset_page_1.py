@@ -24,7 +24,6 @@ def page_1():
                     file_path = os.path.join(temp_dir, uploaded_file.name)
                     with open(file_path, "wb") as f:
                         f.write(uploaded_file.getvalue())
-                    st.write(f"uploaded_file_path:{file_path}")
 
                     st.session_state.dataset_form_data["file_pth"] = file_path
 
@@ -43,7 +42,10 @@ def page_1():
                 st.session_state.dataset_form_data["s3_bucket"] = st.selectbox("S3 Bucket",
                                                                                options=bucket_list,
                                                                                index=0)
-                st.session_state.dataset_form_data["s3_dataset_dir"] = st.text_input("S3 dataset folder")
+                st.session_state.dataset_form_data["s3_dataset_path"] = st.text_input("S3 dataset Path")
+
+                if not st.session_state.dataset_form_data["s3_dataset_path"]:
+                    st.error("S3 dataset Path is required.")
 
                 st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",
                                                                                value="YYYYMMDD")
@@ -56,11 +58,24 @@ def page_1():
                     f'DAG Start Date'
                 )
                 st.session_state.dataset_form_data["schedule_interval"] = st.text_input("Schedule Interval",
-                                                                                       value="* * * * *")
+                                                                                       value="0 23 * * 1-5")
 
                 st.session_state.dataset_form_data["pipeline_type"] = st.selectbox("Generate Pipelines Using:",
                                                                                 options=pipelines_options,
                                                                                index=0)
+
+                if st.session_state.dataset_form_data["pipeline_type"] == "SNOWPIPE":
+                    st.session_state.dataset_form_data["s3_credentials"] = st.checkbox("Want to Provide S3 Credentials?",
+                                                                               value=False)
+                    if st.session_state.dataset_form_data["s3_credentials"]:
+                        st.session_state.dataset_form_data["aws_access_key"] = st.text_input("S3 Access Key")
+                        st.session_state.dataset_form_data["aws_secret_key"] = st.text_input("S3 Secret Key")
+                        if not (st.session_state.dataset_form_data["aws_access_key"] and st.session_state.dataset_form_data["aws_secret_key"]):
+                            st.error("S3 Access/Secret Keys are required")
+                    else:
+                        st.session_state.dataset_form_data["snowflake_stage_name"] = st.selectbox("Snowflake Stage Name:",
+                                                                                           options=stage_name_options,
+                                                                                           index=0)
 
 
                 if st.session_state.dataset_form_data.get("dataset_name") is not None:
