@@ -49,7 +49,7 @@ class GenerateConfigs:
     def generate(self):
         bucket = self.form_data["s3_bucket"]
         file_path = self.form_data["file_pth"]
-        start_date_str = self.form_data["start_date"].strftime("%Y,%m,%d")
+        start_date_str = self.form_data["start_date"].strftime("%Y,%m,%d").replace(",0", ",")
         file_date_format = self.form_data["file_date_format"]
         dataset_name = self.form_data["dataset_name"]
         pipeline_type = self.form_data["pipeline_type"]
