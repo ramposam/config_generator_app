@@ -47,8 +47,7 @@ def page_1():
                 if not st.session_state.dataset_form_data["s3_dataset_path"]:
                     st.error("S3 dataset Path is required.")
 
-                st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",
-                                                                               value="YYYYMMDD")
+                st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format" )
 
 
                 st.session_state.dataset_form_data["catchup"] = st.checkbox("Historical Data load",
