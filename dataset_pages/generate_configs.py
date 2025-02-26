@@ -58,10 +58,11 @@ class GenerateConfigs:
         aws_access_key = self.form_data.get("aws_access_key")
         aws_secret_key = self.form_data.get("aws_secret_key")
         snowflake_stage_name = self.form_data.get("snowflake_stage_name")
+        db_type =  self.form_data.get("db_type","SNOWFLAKE")
 
         configs_tmp_dir =  tempfile.mkdtemp()
 
-        configs_gen = ConfigTemplate( bucket=bucket,pipeline_type=pipeline_type, file_path=file_path,
+        configs_gen = ConfigTemplate( bucket=bucket,pipeline_type=pipeline_type, file_path=file_path,db_type=db_type,
                                       dataset_name=dataset_name, start_date=start_date_str, catchup=True,
                                       datetime_format=file_date_format, aws_access_key = aws_access_key,
                                       aws_secret_key=aws_secret_key, schedule_interval=schedule_interval,

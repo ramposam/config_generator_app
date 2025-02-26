@@ -62,6 +62,7 @@ def page_1():
                 st.session_state.dataset_form_data["pipeline_type"] = st.selectbox("Generate Pipelines Using:",
                                                                                 options=pipelines_options,
                                                                                index=0)
+                st.session_state.dataset_form_data["db_type"] = "POSTGRES" if "POSTGRES" in st.session_state.dataset_form_data["pipeline_type"] else "SNOWFLAKE"
 
                 if st.session_state.dataset_form_data["pipeline_type"] == "SNOWPIPE":
                     st.session_state.dataset_form_data["s3_credentials"] = st.checkbox("Want to Provide S3 Credentials?",
