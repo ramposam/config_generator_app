@@ -33,4 +33,5 @@ def switch_dataset_pages(generate_standard_configs=None):
         dataset_configs = st.button("Generate Configs", key="dataset_configs_generate",use_container_width=True)
 
     if dataset_configs:
+        print(st.session_state.dataset_form_data)
         GenerateConfigs(st.session_state.dataset_form_data).generate()

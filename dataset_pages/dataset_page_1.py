@@ -2,7 +2,7 @@ import os
 import traceback
 
 
-from helpers.constants import yes_no_options, bucket_list, pipelines_options, stage_name_options
+from helpers.constants import yes_no_options, bucket_list, pipelines_options, stage_name_options, encoding_options
 from helpers.utils import get_df_from_query_with_error, dummy
 import streamlit as st
 
@@ -16,16 +16,28 @@ def page_1():
         st.markdown("##### Filter Datasets")
         try:
             st.session_state.dataset_form_data["file_pth"] = None
-            col1, col2, col3 = st.columns([1,8,1])
-            with col2:
-                uploaded_file = st.file_uploader("Select File to upload", type=["TXT","CSV"])
-                if uploaded_file:
-                    temp_dir = tempfile.mkdtemp()
-                    file_path = os.path.join(temp_dir, uploaded_file.name)
-                    with open(file_path, "wb") as f:
-                        f.write(uploaded_file.getvalue())
+            col1, col2, col3, col4 = st.columns([1,7 ,3, 1])
+            with col3:
+                st.markdown("")
+                st.markdown("")
+                st.session_state.dataset_form_data["has_file_path"] = st.checkbox(
+                    "Has File path?",
+                    value=False)
 
-                    st.session_state.dataset_form_data["file_pth"] = file_path
+
+            with col2:
+                if not st.session_state.dataset_form_data["has_file_path"]:
+                    uploaded_file = st.file_uploader("Select File to upload", type=["TXT","CSV"])
+                    if uploaded_file:
+                        temp_dir = tempfile.mkdtemp()
+                        file_path = os.path.join(temp_dir, uploaded_file.name)
+                        with open(file_path, "wb") as f:
+                            f.write(uploaded_file.getvalue())
+
+                            st.session_state.dataset_form_data["file_pth"] = file_path
+                else:
+                    st.session_state.dataset_form_data["file_pth"] = st.text_input("File Path",
+                                                                                       value=None)
 
                 st.session_state.dataset_form_data["file_has_dataset_name"] = st.checkbox("Use File Name for Dataset Configs",
                                                                                value=True)
@@ -55,6 +67,11 @@ def page_1():
 
                 st.session_state.dataset_form_data["start_date"] = st.date_input(
                     f'DAG Start Date'
+                )
+                st.session_state.dataset_form_data["encoding"] = st.selectbox(
+                    f'Encoding Type',
+                    options=encoding_options,
+                    index=0
                 )
                 st.session_state.dataset_form_data["schedule_interval"] = st.text_input("Schedule Interval",
                                                                                        value="0 23 * * 1-5")

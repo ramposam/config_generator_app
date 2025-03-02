@@ -59,6 +59,7 @@ class GenerateConfigs:
         aws_secret_key = self.form_data.get("aws_secret_key")
         snowflake_stage_name = self.form_data.get("snowflake_stage_name")
         db_type =  self.form_data.get("db_type","SNOWFLAKE")
+        encoding = self.form_data.get("encoding", "UTF-8")
 
         configs_tmp_dir =  tempfile.mkdtemp()
 
@@ -66,7 +67,8 @@ class GenerateConfigs:
                                       dataset_name=dataset_name, start_date=start_date_str, catchup=True,
                                       datetime_format=file_date_format, aws_access_key = aws_access_key,
                                       aws_secret_key=aws_secret_key, schedule_interval=schedule_interval,
-                                      s3_dataset_path=s3_dataset_path, snowflake_stage_name=snowflake_stage_name)
+                                      s3_dataset_path=s3_dataset_path, snowflake_stage_name=snowflake_stage_name,
+                                      encoding=encoding)
 
         configs_dir = configs_gen.generate_configs(configs_tmp_dir)
 
