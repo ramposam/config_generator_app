@@ -11,11 +11,12 @@ import tempfile
 def page_1():
     st.markdown("####  Datasets ####")
     st.markdown("")
+    ui_errors = []
     with st.expander("**Datasets**", expanded=True):
         st.markdown("")
         st.markdown("##### Filter Datasets")
         try:
-            st.session_state.dataset_form_data["file_pth"] = None
+            st.session_state.dataset_form_data["file_path"] = None
             col1, col2, col3, col4 = st.columns([1,7 ,3, 1])
             with col3:
                 st.markdown("")
@@ -34,10 +35,11 @@ def page_1():
                         with open(file_path, "wb") as f:
                             f.write(uploaded_file.getvalue())
 
-                            st.session_state.dataset_form_data["file_pth"] = file_path
+                            st.session_state.dataset_form_data["file_path"] = file_path
                 else:
-                    st.session_state.dataset_form_data["file_pth"] = st.text_input("File Path",
+                    st.session_state.dataset_form_data["file_path"] = st.text_input("File Path",
                                                                                        value=None)
+                    st.session_state.dataset_form_data["dataset_path"]= "/opt/airflow/datasets" if st.session_state.dataset_form_data["file_path"] else None
 
                 st.session_state.dataset_form_data["file_has_dataset_name"] = st.checkbox("Use File Name for Dataset Configs",
                                                                                value=True)
@@ -47,18 +49,44 @@ def page_1():
                                                                                    value=None)
                 else:
 
-                    if st.session_state.dataset_form_data["file_pth"] is not None:
-                        dataset_name = os.path.basename(st.session_state.dataset_form_data["file_pth"])
+                    if st.session_state.dataset_form_data["file_path"] is not None:
+                        dataset_name = os.path.basename(st.session_state.dataset_form_data["file_path"])
                         st.session_state.dataset_form_data["dataset_name"] = dataset_name.split(".")[0]
 
-                st.session_state.dataset_form_data["s3_bucket"] = st.selectbox("S3 Bucket",
+                st.session_state.dataset_form_data["load_type"] = st.selectbox("Load From",
+                                                                               options=["Local","AWS S3"],
+                                                                               index=0)
+                if st.session_state.dataset_form_data["load_type"] == "AWS S3":
+                    st.session_state.dataset_form_data["bucket"] = st.selectbox("S3 Bucket",
                                                                                options=bucket_list,
                                                                                index=0)
-                st.session_state.dataset_form_data["s3_dataset_path"] = st.text_input("S3 dataset Path")
+                    st.session_state.dataset_form_data["dataset_path"] = st.text_input("S3 dataset Path")
 
-                if not st.session_state.dataset_form_data["s3_dataset_path"]:
-                    st.error("S3 dataset Path is required.")
+                    if not st.session_state.dataset_form_data["dataset_path"]:
+                        st.error("AWS S3 dataset Path is required.")
+                        ui_errors.append("AWS S3 dataset Path is required.")
+                        return ui_errors
 
+                else:
+                    st.session_state.dataset_form_data["bucket"] = None
+                    st.info(f"Make sure you mounted your datasets, configs, and dags paths to docker container on /opt/airflow/ otherwise manually copy them")
+                    st.session_state.dataset_form_data["dataset_path"] = st.text_input("Source dataset Path",value=st.session_state.dataset_form_data.get("dataset_path"))
+
+                if st.session_state.dataset_form_data["dataset_path"]:
+                    _, ext = os.path.splitext(st.session_state.dataset_form_data["dataset_path"])
+                    ext = ext.lower().lstrip('.')
+                else:
+                    ext = None
+
+                if ext in ["csv","dat","txt","zip","json",]:
+                    st.error(
+                        f"""Invalid path: '{st.session_state.dataset_form_data["dataset_path"]}' looks like a file with extension '.{ext}'. """
+                        f"Expected a directory path only."
+                    )
+                    ui_errors.append("Invalid dataset path. Expected a directory path only.")
+                    return ui_errors
+
+                st.info(f"Remove File Date Format when file name doesn't have date or datetime")
                 st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",value="YYYY-DD-DD" )
 
 
@@ -92,6 +120,8 @@ def page_1():
                         st.session_state.dataset_form_data["aws_secret_key"] = st.text_input("S3 Secret Key")
                         if not (st.session_state.dataset_form_data["aws_access_key"] and st.session_state.dataset_form_data["aws_secret_key"]):
                             st.error("S3 Access/Secret Keys are required")
+                            ui_errors.append("S3 Access/Secret Keys are required")
+                            return ui_errors
                     else:
                         st.session_state.dataset_form_data["snowflake_stage_name"] = st.selectbox("Snowflake Stage Name:",
                                                                                            options=stage_name_options,
@@ -101,8 +131,10 @@ def page_1():
                 if st.session_state.dataset_form_data.get("dataset_name") is not None:
                     st.session_state.dataset_form_data["dataset_name"] = st.session_state.dataset_form_data["dataset_name"].replace(" ","_").lower()
 
+            return ui_errors
         except Exception as ex:
             st.markdown("")
             print(traceback.format_exc())
             st.error(ex.__str__())
-            return None
+            ui_errors.append(ex.__str__())
+            return ui_errors

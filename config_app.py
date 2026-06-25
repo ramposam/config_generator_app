@@ -8,6 +8,20 @@ import os
 
 if __name__ == "__main__":
 
+    st.set_page_config(
+        page_title="Automated ETL Pipeline",
+        layout="wide")
+    
+    st.html(
+        """
+        <style>
+            .stMainBlockContainer {
+                max-width: 1200px; /* Adjust this value to your preferred pixel width */
+                margin: auto;       /* Optional: Centers the layout on widescreen displays */
+            }
+        </style>
+        """
+    )
     inject_css(addon_header_css)
     logo_path = os.path.join(os.getcwd(), "logo.png")
     st.logo(image=logo_path, icon_image=None)
@@ -17,7 +31,6 @@ if __name__ == "__main__":
     initialize_session()
 
     datasets = st.Page("app_pages/1_dataset_configs.py", title=" Dataset Configs", icon=":material/arrow_forward:")
-    rules = st.Page("app_pages/2_rules.py", title=" Rules", icon=":material/house:")
 
-    pg = st.navigation([datasets,rules])
+    pg = st.navigation([datasets])
     pg.run()

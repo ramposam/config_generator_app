@@ -26,12 +26,14 @@ def prev_page():
 
 def switch_dataset_pages(generate_standard_configs=None):
     # Page 1
-    page_1()
+    page_errors = page_1()
     col1, col2, col3 = st.columns([3, 6, 3])
 
     with col3:
         dataset_configs = st.button("Generate Configs", key="dataset_configs_generate",use_container_width=True)
-
     if dataset_configs:
-        print(st.session_state.dataset_form_data)
-        GenerateConfigs(st.session_state.dataset_form_data).generate()
+        if len(page_errors) == 0:
+            print(st.session_state.dataset_form_data)
+            GenerateConfigs(st.session_state.dataset_form_data).generate()
+        else:
+            st.error("Please fix the errors in the form before generating configs.")

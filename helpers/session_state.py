@@ -17,6 +17,7 @@ def initialize_session():
     if 'dataset_form_data' not in st.session_state:
         st.session_state.dataset_form_data = {}
 
+
     if 'dataset_rule_partitions' not in st.session_state:
         st.session_state.dataset_rule_partitions = []
 

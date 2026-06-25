@@ -28,8 +28,25 @@ class GenerateConfigs:
                     zipf.write(file_path, relative_path)
 
 
+    def copy_dir_exclude(self, src, dst, exclude_dirs):
+        """Copy directory excluding specified subdirectories"""
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        
+        for item in os.listdir(src):
+            src_path = os.path.join(src, item)
+            dst_path = os.path.join(dst, item)
+            
+            if item in exclude_dirs:
+                continue
+            
+            if os.path.isdir(src_path):
+                shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src_path, dst_path)
+
     def zipit(self,config_dir, delete_configs):
-        zip_name = os.path.join(os.path.dirname(config_dir), os.path.basename(config_dir))
+        zip_name = os.path.join(os.path.dirname(config_dir), "generated_configs")
         # shutil.make_archive(zip_name, 'zip', config_dir)
         self.zip_files_with_long_names(config_dir, zip_name + ".zip")
         if delete_configs:
@@ -47,14 +64,14 @@ class GenerateConfigs:
 
 
     def generate(self):
-        bucket = self.form_data["s3_bucket"]
-        file_path = self.form_data["file_pth"]
+        bucket = self.form_data.get("bucket")
+        file_path = self.form_data["file_path"]
         start_date_str = self.form_data["start_date"].strftime("%Y,%m,%d").replace(",0", ",")
         file_date_format = self.form_data["file_date_format"]
         dataset_name = self.form_data["dataset_name"]
         pipeline_type = self.form_data["pipeline_type"]
         schedule_interval = self.form_data["schedule_interval"]
-        s3_dataset_path = self.form_data["s3_dataset_path"]
+        dataset_path = self.form_data["dataset_path"]
         aws_access_key = self.form_data.get("aws_access_key")
         aws_secret_key = self.form_data.get("aws_secret_key")
         snowflake_stage_name = self.form_data.get("snowflake_stage_name")
@@ -67,7 +84,7 @@ class GenerateConfigs:
                                       dataset_name=dataset_name, start_date=start_date_str, catchup=True,
                                       datetime_format=file_date_format, aws_access_key = aws_access_key,
                                       aws_secret_key=aws_secret_key, schedule_interval=schedule_interval,
-                                      s3_dataset_path=s3_dataset_path, snowflake_stage_name=snowflake_stage_name,
+                                      dataset_path=dataset_path, snowflake_stage_name=snowflake_stage_name,
                                       encoding=encoding)
 
         configs_dir = configs_gen.generate_configs(configs_tmp_dir)
@@ -75,6 +92,10 @@ class GenerateConfigs:
         if not pipeline_type == "SNOWPIPE":
             dag_gen = DagGenerator(configs_dir=configs_dir, dataset_name=dataset_name)
             dag_gen.generate_dag_ddls()
+
+        # Copy configs to dataset_path/dataset_configs/dev/ excluding generated_dag_ddls
+        dataset_configs_dest = os.path.join(dataset_path, "dataset_configs", "dev")
+        self.copy_dir_exclude(configs_dir, dataset_configs_dest, exclude_dirs=["generated_dags_ddls"])
 
         zipped_file = self.zipit(configs_dir, True)
 
