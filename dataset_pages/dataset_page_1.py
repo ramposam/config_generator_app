@@ -1,4 +1,5 @@
 import os
+import shutil
 import traceback
 
 
@@ -12,6 +13,15 @@ def page_1():
     st.markdown("####  Datasets ####")
     st.markdown("")
     ui_errors = []
+    
+    # Clean up previous temp directory if it exists
+    if st.session_state.dataset_form_data.get("temp_dir") and os.path.exists(st.session_state.dataset_form_data["temp_dir"]):
+        try:
+            shutil.rmtree(st.session_state.dataset_form_data["temp_dir"])
+        except Exception as ex:
+            print(f"Failed to clean up temp directory: {ex}")
+        st.session_state.dataset_form_data["temp_dir"] = None
+    
     with st.expander("**Datasets**", expanded=True):
         st.markdown("")
         st.markdown("##### Filter Datasets")
@@ -36,6 +46,7 @@ def page_1():
                             f.write(uploaded_file.getvalue())
 
                             st.session_state.dataset_form_data["file_path"] = file_path
+                            st.session_state.dataset_form_data["temp_dir"] = temp_dir
                 else:
                     st.session_state.dataset_form_data["file_path"] = st.text_input("File Path",
                                                                                        value=None)
@@ -87,7 +98,7 @@ def page_1():
                     return ui_errors
 
                 st.info(f"Remove File Date Format when file name doesn't have date or datetime")
-                st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",value="YYYY-DD-DD" )
+                st.session_state.dataset_form_data["file_date_format"] = st.text_input("File Date Format",value="YYYY-MM-DD" )
 
 
                 if st.session_state.dataset_form_data["file_date_format"]:

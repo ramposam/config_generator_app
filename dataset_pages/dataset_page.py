@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 
 from dataset_pages.dataset_page_1 import page_1
@@ -34,6 +36,9 @@ def switch_dataset_pages(generate_standard_configs=None):
     if dataset_configs:
         if len(page_errors) == 0:
             print(st.session_state.dataset_form_data)
-            GenerateConfigs(st.session_state.dataset_form_data).generate()
+            with st.spinner("Generating configs... This may take a few moments."):
+                zipped_file = GenerateConfigs(st.session_state.dataset_form_data).generate()
+                st.info(f"Generated configs as zip:{zipped_file}")
+
         else:
             st.error("Please fix the errors in the form before generating configs.")
