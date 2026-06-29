@@ -89,6 +89,9 @@ class GenerateConfigs:
         snowflake_stage_name = self.form_data.get("snowflake_stage_name")
         db_type =  self.form_data.get("db_type","SNOWFLAKE")
         encoding = self.form_data.get("encoding", "UTF-8")
+        layer = self.form_data.get("layer", "Mirror -> Stage -> Standard")
+        layer_0_db = self.form_data.get("layer_0_db", "MIRROR_DB")
+        layer_1_db = self.form_data.get("layer_1_db", "STAGE_DB")
 
         print(f"[INFO] Dataset: {dataset_name}, Pipeline Type: {pipeline_type}")
         configs_tmp_dir = tempfile.mkdtemp()
@@ -101,7 +104,7 @@ class GenerateConfigs:
                                           datetime_format=file_date_format, aws_access_key = aws_access_key,
                                           aws_secret_key=aws_secret_key, schedule_interval=schedule_interval,
                                           dataset_path=dataset_path, snowflake_stage_name=snowflake_stage_name,
-                                          encoding=encoding)
+                                          encoding=encoding, layer=layer, layer_0_db=layer_0_db, layer_1_db=layer_1_db)
 
             print("[INFO] Generating configuration files...")
             configs_dir = configs_gen.generate_configs(configs_tmp_dir)
@@ -116,13 +119,15 @@ class GenerateConfigs:
             else:
                 print("[INFO] Skipping DAG generation for SNOWPIPE pipeline")
 
-            # Copy configs to dataset_path/dataset_configs/dev/ excluding generated_dag_ddls
-            try:
-                dataset_configs_dest = os.path.join(dataset_path, "dataset_configs", "dev")
-                self.copy_dir_exclude(configs_dir, dataset_configs_dest, exclude_dirs=["generated_dag_ddls"])
-            except Exception as ex:
-                st.error(f"Failed to copy configs to {dataset_configs_dest}: {ex}")
-                return
+            # Copy configs to dataset_path/dataset_configs/dev/ excluding generated_dag_ddls (only for Local load type)
+            load_type = self.form_data.get("load_type")
+            if load_type == "Local":
+                try:
+                    dataset_configs_dest = os.path.join(dataset_path, "dataset_configs", "dev")
+                    self.copy_dir_exclude(configs_dir, dataset_configs_dest, exclude_dirs=["generated_dag_ddls"])
+                except Exception as ex:
+                    st.error(f"Failed to copy configs to {dataset_configs_dest}: {ex}")
+                    return
 
             print("[INFO] Creating zip file...")
             zipped_file = self.zipit(configs_dir, False)

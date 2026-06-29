@@ -68,15 +68,16 @@ def page_1():
                                                                                options=["Local","AWS S3"],
                                                                                index=0)
                 if st.session_state.dataset_form_data["load_type"] == "AWS S3":
-                    st.session_state.dataset_form_data["bucket"] = st.selectbox("S3 Bucket",
-                                                                               options=bucket_list,
-                                                                               index=0)
                     st.session_state.dataset_form_data["dataset_path"] = st.text_input("S3 dataset Path")
 
                     if not st.session_state.dataset_form_data["dataset_path"]:
                         st.error("AWS S3 dataset Path is required.")
                         ui_errors.append("AWS S3 dataset Path is required.")
                         return ui_errors
+                    # Extract bucket from S3 URI (e.g., s3://bucket-name/path -> bucket-name)
+                    dataset_path = st.session_state.dataset_form_data["dataset_path"]
+                    bucket = dataset_path.replace("s3://", "").split("/")[0] if dataset_path.startswith("s3://") else ""
+                    st.session_state.dataset_form_data["bucket"] = st.text_input("S3 Bucket", value=bucket)
 
                 else:
                     st.session_state.dataset_form_data["bucket"] = None
@@ -122,6 +123,28 @@ def page_1():
                                                                                 options=pipelines_options,
                                                                                index=0)
                 st.session_state.dataset_form_data["db_type"] = "POSTGRES" if "POSTGRES" in st.session_state.dataset_form_data["pipeline_type"] else "SNOWFLAKE"
+
+                # Layer selection
+                layer_options = [
+                    "Bronze -> Silver -> Gold",
+                    "Raw -> Land -> Cleaned", 
+                    "Mirror -> Stage -> Standard"
+                ]
+                st.session_state.dataset_form_data["layer"] = st.selectbox("Select Layer", options=layer_options, index=0)
+
+                # Dynamic DB name inputs based on layer selection
+                selected_layer = st.session_state.dataset_form_data["layer"]
+                layer_parts = selected_layer.split(" -> ")
+                
+                st.markdown("##### Layer Database Names")
+                for i, layer_part in enumerate(layer_parts):
+                    default_db_name = f"{layer_part.upper()}_DB"
+                    field_key = f"layer_{i}_db"
+                    st.session_state.dataset_form_data[field_key] = st.text_input(
+                        f"{layer_part} Database Name",
+                        value=default_db_name,
+                        key=f"db_input_{i}"
+                    )
 
                 if st.session_state.dataset_form_data["pipeline_type"] == "SNOWPIPE":
                     st.session_state.dataset_form_data["s3_credentials"] = st.checkbox("Want to Provide S3 Credentials?",
