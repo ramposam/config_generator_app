@@ -54,6 +54,7 @@ config_generator_app/
 ├── dags/                       # Generated Airflow DAGs directory
 ├── config_app.py              # Main Streamlit application entry point
 ├── logo.png                   # Application logo
+├── test.py                    # Database migration utility
 └── README.md                  # This file
 ```
 
@@ -98,6 +99,9 @@ Third configuration page for:
 - Primary key specification
 - Source and target table mapping
 
+### `test.py`
+Database migration utility for migrating data from SQLite to PostgreSQL. Uses environment variables for sensitive credentials.
+
 ## Pipeline Types
 
 ### 1. Airflow with Snowflake
@@ -133,11 +137,40 @@ Native Snowflake Snowpipe integration for continuous data loading from S3 with o
 - **Pipeline Type**: Target platform (Snowflake/Postgres/Snowpipe)
 
 ### Optional Parameters
-- **AWS S3 Credentials**: Access key and secret key for S3 access
+- **AWS S3 Credentials**: Access key and secret key for S3 access (entered via UI)
 - **Snowflake Stage Name**: Stage name for Snowpipe integration
 - **Encoding Type**: File encoding (UTF-8, ASCII, ISO-8859-1, Windows-1252)
 - **Historical Data Load**: Enable catchup for historical data
 - **Start Date**: DAG execution start date
+
+## Security Best Practices
+
+This application follows security best practices for handling sensitive credentials:
+
+- **No Hardcoded Credentials**: All sensitive data (passwords, API keys, tokens) are retrieved from environment variables
+- **User Input for S3 Credentials**: AWS S3 access keys are entered through the Streamlit UI and not stored in code
+- **Environment Variables**: Database credentials and API keys should be set as environment variables
+
+### Setting Environment Variables
+
+For the test.py utility, set the following environment variables:
+
+```bash
+export DB_USER="your_database_user"
+export DB_PASSWORD="your_database_password"
+```
+
+For Snowflake connections (used in session_state.py), set:
+
+```bash
+export SNOWFLAKE_USER="your_snowflake_user"
+export SNOWFLAKE_PASSWORD="your_snowflake_password"
+export SNOWFLAKE_ACCOUNT="your_snowflake_account"
+export SNOWFLAKE_DATABASE="your_snowflake_database"
+export SNOWFLAKE_SCHEMA="your_snowflake_schema"
+export SNOWFLAKE_WAREHOUSE="your_snowflake_warehouse"
+export SNOWFLAKE_ROLE="your_snowflake_role"
+```
 
 ## Dependencies
 
@@ -147,6 +180,8 @@ The application requires the following Python packages:
   - `DagGenerator`: For Airflow DAG generation
   - `ConfigTemplate`: For configuration template generation
 - `pandas`: Data manipulation
+- `sqlalchemy`: Database connectivity
+- `snowflake-connector-python`: Snowflake database connectivity
 - Additional database-specific libraries for Snowflake and PostgreSQL
 
 ## Usage
@@ -179,6 +214,18 @@ The zip file includes:
 - DDL scripts
 - DBT model definitions
 
+### Database Migration (test.py)
+
+To migrate data from SQLite to PostgreSQL:
+
+1. Set the required environment variables (DB_USER, DB_PASSWORD)
+2. Update the SQLite database path in test.py
+3. Run the script:
+
+```bash
+python test.py
+```
+
 ## Schedule Interval Examples
 
 - `0 * * * *` - Every hour
@@ -194,6 +241,8 @@ For more examples, visit [crontab.guru](https://crontab.guru/) or [crontab.cronh
 - The application automatically excludes the `generated_dag_ddls` directory when copying configs to the dataset path
 - File paths with extensions like `.csv`, `.dat`, `.txt`, `.zip`, `.json` are treated as invalid (directory paths expected)
 - Dataset names are automatically converted to lowercase with spaces replaced by underscores
+- Never commit sensitive credentials to version control
+- Use environment variables or secret management systems for all sensitive data
 
 ## License
 
