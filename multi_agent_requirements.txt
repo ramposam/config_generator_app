@@ -1,0 +1,16 @@
+streamlit>=1.40.0
+langchain
+langchain-community
+langchain-classic
+langchain-groq
+langchain-openai
+langgraph
+tavily-python==0.3.3
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.27
+pandas==2.2.1
+python-dotenv>=1.1.0
+langchain-core>=1.3.3
+langchain-text-splitters>=1.1.2
+protobuf>=5.0,<7.0
+packaging>=24.0
