@@ -4,7 +4,7 @@ from pathlib import Path
 from langchain.tools import tool
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from multi_agent_app.db_utils import execute_football_query, get_football_tables, get_table_schema
 
 # Configure logging
@@ -55,16 +55,16 @@ def query_ipl_database(sql_query: str) -> str:
     Returns:
         Query results as formatted string
     """
-    logger.info(f"Executing IPL database query: {sql_query[:100]}...")
+    logger.info(f"[TOOL CALL] query_ipl_database called with query: {sql_query[:200]}...")
     try:
         result = execute_football_query(sql_query)
         if "error" in result.columns:
-            logger.error(f"Query execution failed: {result['error'].iloc[0]}")
+            logger.error(f"[TOOL ERROR] Query execution failed: {result['error'].iloc[0]}")
             return f"Error executing query: {result['error'].iloc[0]}"
-        logger.info("Query executed successfully")
+        logger.info(f"[TOOL SUCCESS] Query executed successfully. Result rows: {len(result)}")
         return result.to_string(index=False, max_rows=50)
     except Exception as e:
-        logger.error(f"Error executing query: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception during query execution: {str(e)}")
         return f"Error executing query: {str(e)}"
 
 
@@ -80,13 +80,17 @@ def get_ipl_schema_info(table_name: str = None) -> str:
     Returns:
         Schema information as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_ipl_schema_info called with table_name: {table_name}")
     try:
         if table_name:
             schema = get_table_schema("ipl", table_name)
+            logger.info(f"[TOOL SUCCESS] Schema retrieved for {table_name}")
             return f"Schema for SILVER.{table_name}:\n{schema}"
         else:
+            logger.info("[TOOL SUCCESS] Listed all available tables")
             return f"Available tables in ETL_PIPELINES_DB.SILVER:\n- SILVER.T_STG_CRICKET_LEAGUE_IPL_DATA"
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception getting schema info: {str(e)}")
         return f"Error getting schema info: {str(e)}"
 
 
@@ -116,11 +120,13 @@ def get_ipl_insights(business_question: str) -> str:
     Returns:
         Analysis results as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_ipl_insights called with question: {business_question[:200]}...")
     try:
         # Common IPL queries
         question_lower = business_question.lower()
         
         if "season" in question_lower:
+            logger.info("[TOOL LOG] Executing season-wise analysis query")
             query = """
                 SELECT 
                     "SEASON",
@@ -132,6 +138,7 @@ def get_ipl_insights(business_question: str) -> str:
                 ORDER BY "SEASON"
             """
             result = execute_football_query(query)
+            logger.info(f"[TOOL SUCCESS] Season analysis completed. Rows: {len(result)}")
             return f"Season-wise Analysis:\n{result.to_string(index=False)}"
         
         elif "team" in question_lower:
@@ -240,9 +247,11 @@ def get_ipl_insights(business_question: str) -> str:
             return f"Death Overs Analysis:\n{result.to_string(index=False)}"
         
         else:
+            logger.warning("[TOOL WARNING] No matching analysis pattern found")
             return "Please specify what you want to analyze (season, team, batsman, bowler, venue, dismissal types, powerplay, death overs, etc.)"
             
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception generating insights: {str(e)}")
         return f"Error generating insights: {str(e)}"
 
 
@@ -276,7 +285,7 @@ def create_ipl_agent(use_groq: bool = False):
     tools = [query_ipl_database, get_ipl_schema_info, get_ipl_insights]
 
     # Create agent using LangGraph
-    agent = create_react_agent(llm, tools)
+    agent = create_agent(llm, tools)
     logger.info("IPL agent created successfully with schema-aware tools")
 
     return agent

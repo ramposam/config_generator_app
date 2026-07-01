@@ -66,7 +66,7 @@ def get_current_weather(city: str) -> str:
     Returns:
         Current weather information as a formatted string
     """
-    logger.info(f"Fetching current weather for: {city}")
+    logger.info(f"[TOOL CALL] get_current_weather called with city: {city}")
     try:
         api_key = os.getenv("OPENWEATHER_API_KEY")
         url = f"http://api.openweathermap.org/data/2.5/weather"
@@ -77,8 +77,10 @@ def get_current_weather(city: str) -> str:
             "units": "metric"
         }
         
+        logger.info("[TOOL LOG] Calling OpenWeather API...")
         response = requests.get(url, params=params)
         response.raise_for_status()
+        logger.info(f"[TOOL SUCCESS] OpenWeather API returned status {response.status_code}")
         data = response.json()
         
         weather = data.get("weather", [{}])[0]
@@ -94,9 +96,10 @@ Current Weather for {data.get('name', city)}:
 - Wind Speed: {wind.get('speed', 'N/A')} m/s
 - Pressure: {main.get('pressure', 'N/A')} hPa
 """
+        logger.info("[TOOL SUCCESS] Weather data formatted successfully")
         return result.strip()
     except Exception as e:
-        logger.error(f"Error getting current weather: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception getting current weather: {str(e)}")
         return f"Error getting current weather: {str(e)}"
 
 
@@ -158,7 +161,7 @@ def get_weather_forecast(city: str, days: int = 5) -> str:
     Returns:
         Weather forecast information as a formatted string
     """
-    logger.info(f"Fetching weather forecast for: {city} ({days} days)")
+    logger.info(f"[TOOL CALL] get_weather_forecast called with city: {city}, days: {days}")
     try:
         api_key = os.getenv("OPENWEATHER_API_KEY")
         url = f"http://api.openweathermap.org/data/2.5/forecast"
@@ -170,8 +173,10 @@ def get_weather_forecast(city: str, days: int = 5) -> str:
             "cnt": days * 8  # 8 forecasts per day (3-hour intervals)
         }
         
+        logger.info("[TOOL LOG] Calling OpenWeather Forecast API...")
         response = requests.get(url, params=params)
         response.raise_for_status()
+        logger.info(f"[TOOL SUCCESS] OpenWeather API returned status {response.status_code}")
         data = response.json()
         
         forecasts = data.get("list", [])
@@ -201,7 +206,7 @@ def get_weather_forecast(city: str, days: int = 5) -> str:
         
         return "\n".join(results)
     except Exception as e:
-        logger.error(f"Error getting weather forecast: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception getting weather forecast: {str(e)}")
         return f"Error getting weather forecast: {str(e)}"
 
 

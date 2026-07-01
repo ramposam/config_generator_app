@@ -56,16 +56,16 @@ def query_ecommerce_database(sql_query: str) -> str:
     Returns:
         Query results as formatted string
     """
-    logger.info(f"Executing E-commerce database query: {sql_query[:100]}...")
+    logger.info(f"[TOOL CALL] query_ecommerce_database called with query: {sql_query[:200]}...")
     try:
         result = execute_ecommerce_query(sql_query)
         if "error" in result.columns:
-            logger.error(f"Query execution failed: {result['error'].iloc[0]}")
+            logger.error(f"[TOOL ERROR] Query execution failed: {result['error'].iloc[0]}")
             return f"Error executing query: {result['error'].iloc[0]}"
-        logger.info("Query executed successfully")
+        logger.info(f"[TOOL SUCCESS] Query executed successfully. Result rows: {len(result)}")
         return result.to_string(index=False, max_rows=50)
     except Exception as e:
-        logger.error(f"Error executing query: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception during query execution: {str(e)}")
         return f"Error executing query: {str(e)}"
 
 
@@ -81,14 +81,18 @@ def get_ecommerce_schema_info(table_name: str = None) -> str:
     Returns:
         Schema information as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_ecommerce_schema_info called with table_name: {table_name}")
     try:
         if table_name:
             schema = get_table_schema("ecommerce", table_name)
+            logger.info(f"[TOOL SUCCESS] Schema retrieved for {table_name}")
             return f"Schema for SILVER.{table_name}:\n{schema}"
         else:
             tables = get_ecommerce_tables()
+            logger.info("[TOOL SUCCESS] Listed all available tables")
             return f"Available tables in ECOMMERCE_DB.SILVER:\n" + "\n".join([f"- SILVER.{table}" for table in tables])
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception getting schema info: {str(e)}")
         return f"Error getting schema info: {str(e)}"
 
 
@@ -116,6 +120,7 @@ def get_ecommerce_insights(business_question: str) -> str:
     Returns:
         Analysis results as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_ecommerce_insights called with question: {business_question[:200]}...")
     try:
         # Common business queries
         question_lower = business_question.lower()
@@ -124,10 +129,10 @@ def get_ecommerce_insights(business_question: str) -> str:
             query = """
                 SELECT 
                     COUNT(*) as total_orders,
-                    SUM(amount) as total_revenue,
-                    AVG(amount) as avg_order_value
-                FROM SILVER.T_STG_ORDERS
-                WHERE amount IS NOT NULL
+                    SUM("TOTAL_AMOUNT") as total_revenue,
+                    AVG("TOTAL_AMOUNT") as avg_order_value
+                FROM "SILVER"."T_STG_ORDERS"
+                WHERE "TOTAL_AMOUNT" IS NOT NULL
             """
             result = execute_ecommerce_query(query)
             return f"Revenue Analysis:\n{result.to_string(index=False)}"
@@ -136,11 +141,11 @@ def get_ecommerce_insights(business_question: str) -> str:
             query = """
                 SELECT 
                     COUNT(*) as total_reviews,
-                    AVG(rating) as avg_rating,
-                    MIN(rating) as min_rating,
-                    MAX(rating) as max_rating
-                FROM SILVER.T_STG_REVIEWS
-                WHERE rating IS NOT NULL
+                    AVG("RATING") as avg_rating,
+                    MIN("RATING") as min_rating,
+                    MAX("RATING") as max_rating
+                FROM "SILVER"."T_STG_REVIEWS"
+                WHERE "RATING" IS NOT NULL
             """
             result = execute_ecommerce_query(query)
             return f"Review Analysis:\n{result.to_string(index=False)}"
@@ -149,8 +154,8 @@ def get_ecommerce_insights(business_question: str) -> str:
             query = """
                 SELECT 
                     COUNT(*) as total_products,
-                    COUNT(DISTINCT category) as unique_categories
-                FROM SILVER.T_STG_PRODUCTS
+                    COUNT(DISTINCT "CATEGORY") as unique_categories
+                FROM "SILVER"."T_STG_PRODUCTS"
             """
             result = execute_ecommerce_query(query)
             return f"Product Analysis:\n{result.to_string(index=False)}"
@@ -159,16 +164,18 @@ def get_ecommerce_insights(business_question: str) -> str:
             query = """
                 SELECT 
                     COUNT(*) as total_users,
-                    COUNT(DISTINCT country) as countries_represented
-                FROM SILVER.T_STG_USERS
+                    COUNT(DISTINCT "CITY") as cities_represented
+                FROM "SILVER"."T_STG_USERS"
             """
             result = execute_ecommerce_query(query)
             return f"User Analysis:\n{result.to_string(index=False)}"
         
         else:
+            logger.warning("[TOOL WARNING] No matching analysis pattern found")
             return "Please specify what you want to analyze (revenue, reviews, products, users, etc.)"
             
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception generating insights: {str(e)}")
         return f"Error generating insights: {str(e)}"
 
 

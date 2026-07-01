@@ -58,16 +58,16 @@ def query_football_database(sql_query: str) -> str:
     Returns:
         Query results as formatted string
     """
-    logger.info(f"Executing Football database query: {sql_query[:100]}...")
+    logger.info(f"[TOOL CALL] query_football_database called with query: {sql_query[:200]}...")
     try:
         result = execute_football_query(sql_query)
         if "error" in result.columns:
-            logger.error(f"Query execution failed: {result['error'].iloc[0]}")
+            logger.error(f"[TOOL ERROR] Query execution failed: {result['error'].iloc[0]}")
             return f"Error executing query: {result['error'].iloc[0]}"
-        logger.info("Query executed successfully")
+        logger.info(f"[TOOL SUCCESS] Query executed successfully. Result rows: {len(result)}")
         return result.to_string(index=False, max_rows=50)
     except Exception as e:
-        logger.error(f"Error executing query: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception during query execution: {str(e)}")
         return f"Error executing query: {str(e)}"
 
 
@@ -83,14 +83,18 @@ def get_football_schema_info(table_name: str = None) -> str:
     Returns:
         Schema information as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_football_schema_info called with table_name: {table_name}")
     try:
         if table_name:
             schema = get_table_schema("football", table_name)
+            logger.info(f"[TOOL SUCCESS] Schema retrieved for {table_name}")
             return f"Schema for public.{table_name}:\n{schema}"
         else:
             tables = get_football_tables()
+            logger.info("[TOOL SUCCESS] Listed all available tables")
             return f"Available tables in ETL_PIPELINES_DB.public:\n" + "\n".join([f"- public.{table}" for table in tables])
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception getting schema info: {str(e)}")
         return f"Error getting schema info: {str(e)}"
 
 
@@ -119,6 +123,7 @@ def get_football_insights(business_question: str) -> str:
     Returns:
         Analysis results as a formatted string
     """
+    logger.info(f"[TOOL CALL] get_football_insights called with question: {business_question[:200]}...")
     try:
         # Common football queries
         question_lower = business_question.lower()
@@ -175,9 +180,11 @@ def get_football_insights(business_question: str) -> str:
             return f"Country Analysis:\n{result.to_string(index=False)}"
         
         else:
+            logger.warning("[TOOL WARNING] No matching analysis pattern found")
             return "Please specify what you want to analyze (players, matches, teams, leagues, countries, etc.)"
             
     except Exception as e:
+        logger.error(f"[TOOL ERROR] Exception generating insights: {str(e)}")
         return f"Error generating insights: {str(e)}"
 
 

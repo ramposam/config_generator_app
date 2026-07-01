@@ -60,6 +60,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "use_groq" not in st.session_state:
     st.session_state.use_groq = True
+if "conversation_history" not in st.session_state:
+    st.session_state.conversation_history = []  # Store full conversation for context
 
 # Header
 st.markdown('<div class="main-header">🤖 Multi-Agent AI Assistant</div>', unsafe_allow_html=True)
@@ -118,10 +120,13 @@ with st.sidebar:
     if st.button("Clear Chat History"):
         logger.info("Clear Chat History button clicked")
         st.session_state.messages = []
+        st.session_state.conversation_history = []
         st.rerun()
 
 # Main chat interface
 st.divider()
+
+logger.info(f"session state messages:{st.session_state.messages}")
 
 # Display chat history
 for message in st.session_state.messages:
@@ -133,11 +138,24 @@ for message in st.session_state.messages:
 
 # Chat input
 if prompt := st.chat_input("Ask me anything..."):
-    logger.info(f"User submitted query: {prompt[:100]}...")
+    logger.info(f"User submitted query: {prompt}")
+    logger.info(f"Current conversation history length: {len(st.session_state.conversation_history)}")
     start_time = time.time()
+    
+    # Build context from conversation history for short queries
+    context_prompt = prompt
+    if len(prompt.strip().split()) < 5 and st.session_state.conversation_history:
+        # Short query - add context from last few exchanges
+        last_exchanges = st.session_state.conversation_history[-4:] if len(st.session_state.conversation_history) >= 4 else st.session_state.conversation_history
+        context = "\n".join([f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}" for msg in last_exchanges])
+        context_prompt = f"Previous conversation context:\n{context}\n\nCurrent question: {prompt}"
+        logger.info(f"Short query detected. Added context from {len(last_exchanges)} previous exchanges")
+    
+    logger.info(f"Final prompt prepared for agent (first 200 chars): {context_prompt[:200]}...")
     
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.conversation_history.append({"role": "user", "content": prompt})
     
     # Display user message
     with st.chat_message("user"):
@@ -148,14 +166,19 @@ if prompt := st.chat_input("Ask me anything..."):
         with st.spinner("Processing your query..."):
             try:
                 logger.info(f"Processing query with use_groq={st.session_state.use_groq}")
+                logger.info(f"Agent selection will use prompt: {context_prompt[:100]}...")
+                logger.info(f"context prompt: {context_prompt}")
                 agent_name, response = select_and_run_agent(
-                    prompt,
+                    context_prompt,
                     use_groq=st.session_state.use_groq
                 )
+                
+                logger.info(f"Agent response received: {response}...")
                 
                 end_time = time.time()
                 duration = end_time - start_time
                 logger.info(f"Query processed successfully by {agent_name} in {duration:.2f} seconds")
+                logger.info(f"Full response length: {len(response)} characters")
                 
                 # Display agent badge
                 st.markdown(f'<span class="agent-badge agent-{agent_name.lower().split()[0]}">{agent_name}</span>', unsafe_allow_html=True)
@@ -163,20 +186,42 @@ if prompt := st.chat_input("Ask me anything..."):
                 # Display response
                 st.markdown(response)
                 
+                # Show processing flow in expander
+                with st.expander("🔍 View Processing Details"):
+                    st.markdown(f"**User Input:**\n{prompt}")
+                    if context_prompt != prompt:
+                        st.markdown(f"\n**Context-Enhanced Prompt:**\n{context_prompt}")
+                    st.markdown(f"\n**Agent Selected:** {agent_name}")
+                    st.markdown(f"\n**Processing Time:** {duration:.2f} seconds")
+                    st.markdown(f"\n**Response Preview (first 500 chars):**\n{response[:500]}...")
+                
                 # Add assistant message to chat history
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": response,
                     "agent": agent_name
                 })
+                st.session_state.conversation_history.append({
+                    "role": "assistant",
+                    "content": response,
+                    "agent": agent_name
+                })
+                
+                logger.info(f"Conversation history updated. Total exchanges: {len(st.session_state.conversation_history)}")
                 
             except Exception as e:
                 end_time = time.time()
                 duration = end_time - start_time
-                logger.error(f"Error processing query after {duration:.2f} seconds: {(str(e))}")
+                logger.error(f"Error processing query after {duration:.2f} seconds: {str(e)}")
+                logger.error(f"Exception type: {type(e).__name__}")
                 error_message = f"Error processing your query: {str(e)}"
                 st.error(error_message)
                 st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": error_message,
+                    "agent": "System"
+                })
+                st.session_state.conversation_history.append({
                     "role": "assistant",
                     "content": error_message,
                     "agent": "System"

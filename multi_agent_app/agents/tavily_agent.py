@@ -63,10 +63,12 @@ def search_web(query: str) -> str:
     Returns:
         Search results as a formatted string with title, URL, and content
     """
-    logger.info(f"Searching web for: {query}")
+    logger.info(f"[TOOL CALL] search_web called with query: {query[:200]}...")
     try:
         tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+        logger.info("[TOOL LOG] Calling Tavily API...")
         response = tavily_client.search(query=query, search_depth="basic", max_results=5)
+        logger.info(f"[TOOL SUCCESS] Tavily API returned {len(response.get('results', []))} results")
         
         results = []
         for result in response.get("results", []):
@@ -77,7 +79,7 @@ def search_web(query: str) -> str:
         
         return "\n".join(results) if results else "No results found"
     except Exception as e:
-        logger.error(f"Error searching web: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception during web search: {str(e)}")
         return f"Error searching web: {str(e)}"
 
 

@@ -99,67 +99,85 @@ def create_multi_agent_graph(use_groq: bool = False):
     def tavily_node(state: AgentState):
         """Execute Tavily web search agent"""
         logger.info("Executing Tavily agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = tavily_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"Tavily agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     def aviation_node(state: AgentState):
         """Execute AviationStack agent"""
         logger.info("Executing Aviation agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = aviation_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"Aviation agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     def weather_node(state: AgentState):
         """Execute OpenWeather agent"""
         logger.info("Executing Weather agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = weather_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"Weather agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     def ecommerce_node(state: AgentState):
         """Execute E-commerce database agent"""
         logger.info("Executing E-commerce agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = ecommerce_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"E-commerce agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     def football_node(state: AgentState):
         """Execute Football database agent"""
         logger.info("Executing Football agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = football_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"Football agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     def ipl_node(state: AgentState):
         """Execute IPL Cricket database agent"""
         logger.info("Executing IPL agent...")
+        logger.info(f"Input message: {state['messages'][-1].content[:200]}...")
         start_time = time.time()
         result = ipl_agent.invoke({"messages": [state["messages"][-1]]})
         end_time = time.time()
         duration = end_time - start_time
         logger.info(f"IPL agent execution completed in {duration:.2f} seconds")
+        logger.info(f"Output message count: {len(result['messages'])}")
         last_message = result["messages"][-1]
+        logger.info(f"Output message (first 200 chars): {last_message.content[:200]}...")
         return {"messages": [last_message]}
     
     # Build the graph
@@ -234,28 +252,76 @@ def run_multi_agent_query(query: str, use_groq: bool = True) -> str:
 
 # Alternative: Simple agent selector (simpler than full LangGraph)
 def select_and_run_agent(query: str, use_groq: bool = False) -> tuple:
-    """Select appropriate agent based on query and run it"""
-    logger.info(f"Starting agent selection for query: {query[:100]}...")
-    query_lower = query.lower()
+    """Select appropriate agent using LLM-based routing and run it"""
+    logger.info(f"Starting LLM-based agent selection for query: {query[:100]}...")
+    
+    # Initialize router LLM
+    if use_groq:
+        router_llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            temperature=0,
+            max_retries=2,
+            api_key=os.getenv("GROQ_API_KEY")
+        )
+        logger.info("Router LLM: Groq llama-3.3-70b-versatile")
+    else:
+        router_llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0,
+            max_retries=2,
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        logger.info("Router LLM: OpenAI gpt-4o-mini")
+    
+    # Define routing prompt
+    routing_prompt = f"""You are an intelligent router that selects the most appropriate agent to handle a user query.
+
+Available agents:
+1. **aviation** - Flight status, airport information, airline data, departure/arrival times
+2. **weather** - Current weather, forecasts, temperature, rain, wind conditions
+3. **ecommerce** - Orders, products, reviews, customers, revenue, sales data
+4. **football** - Football/soccer players, matches, teams, leagues, goals
+5. **ipl** - IPL cricket matches, players, teams, statistics, runs, wickets
+6. **tavily** - General web searches, news, research (default fallback)
+
+User query: "{query}"
+
+Respond with ONLY the agent name (aviation, weather, ecommerce, football, ipl, or tavily). No explanation."""
+    
+    # Get routing decision from LLM
+    try:
+        logger.info("Requesting routing decision from LLM...")
+        routing_response = router_llm.invoke([HumanMessage(content=routing_prompt)])
+        selected_agent = routing_response.content.strip().lower()
+        logger.info(f"LLM routing decision: {selected_agent}")
+        
+        # Validate routing decision
+        valid_agents = ["aviation", "weather", "ecommerce", "football", "ipl", "tavily"]
+        if selected_agent not in valid_agents:
+            logger.warning(f"Invalid agent '{selected_agent}' from LLM, defaulting to tavily")
+            selected_agent = "tavily"
+    except Exception as e:
+        logger.error(f"Error during LLM routing: {str(e)}, defaulting to tavily")
+        selected_agent = "tavily"
     
     # Route to appropriate agent
-    if any(keyword in query_lower for keyword in ["flight", "airport", "airline", "departure", "arrival"]):
+    if selected_agent == "aviation":
         logger.info("Selected: Aviation Agent")
         agent = create_aviation_agent(use_groq=use_groq)
         agent_name = "Aviation Agent"
-    elif any(keyword in query_lower for keyword in ["weather", "forecast", "temperature", "rain", "wind"]):
+    elif selected_agent == "weather":
         logger.info("Selected: Weather Agent")
         agent = create_weather_agent(use_groq=use_groq)
         agent_name = "Weather Agent"
-    elif any(keyword in query_lower for keyword in ["order", "product", "review", "customer", "revenue", "sales", "ecommerce"]):
+    elif selected_agent == "ecommerce":
         logger.info("Selected: E-commerce Agent")
         agent = create_ecommerce_agent(use_groq=use_groq)
         agent_name = "E-commerce Agent"
-    elif any(keyword in query_lower for keyword in ["ipl", "cricket", "batsman", "bowler", "wicket", "run", "stadium", "venue", "t20", "twenty20", "over", "innings", "six", "four", "century", "fifty", "duck", "maiden", "spinner", "pacer", "all-rounder", "wicketkeeper", "franchise", "auction", "tournament", "trophy", "orange cap", "purple cap", "boundary", "yorker", "bouncer", "googly", "doosra", "leg-spin", "off-spin", "fast bowling", "batting", "bowling", "fielding", "super over", "powerplay", "death overs", "batting order", "bowling spell", "run rate", "economy rate", "strike rate", "batting average", "bowling average"]):
+    elif selected_agent == "ipl":
         logger.info("Selected: IPL Agent")
         agent = create_ipl_agent(use_groq=use_groq)
         agent_name = "IPL Agent"
-    elif any(keyword in query_lower for keyword in ["player", "match", "team", "league", "football", "soccer", "goal"]):
+    elif selected_agent == "football":
         logger.info("Selected: Football Agent")
         agent = create_football_agent(use_groq=use_groq)
         agent_name = "Football Agent"
@@ -266,12 +332,16 @@ def select_and_run_agent(query: str, use_groq: bool = False) -> tuple:
     
     # Execute agent
     logger.info(f"Executing {agent_name}...")
+    logger.info(f"Input query for agent: {query[:200]}...")
     start_time = time.time()
     result = agent.invoke({"messages": [{"role": "user", "content": query}]})
     end_time = time.time()
     duration = end_time - start_time
     logger.info(f"{agent_name} execution completed in {duration:.2f} seconds")
+    logger.info(f"Result message count: {len(result['messages'])}")
     
     # Get the last message from the result
     last_message = result["messages"][-1]
+    logger.info(f"Final response (first 200 chars): {last_message.content[:200]}...")
+    logger.info(f"Full response length: {len(last_message.content)} characters")
     return agent_name, last_message.content

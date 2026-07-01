@@ -82,7 +82,7 @@ def get_flight_status(flight_number: str) -> str:
     Returns:
         Flight status information as a formatted string
     """
-    logger.info(f"Fetching flight status for: {flight_number}")
+    logger.info(f"[TOOL CALL] get_flight_status called with flight_number: {flight_number}")
     try:
         api_key = os.getenv("AVIATIONSTACK_API_KEY")
         url = f"http://api.aviationstack.com/v1/flights"
@@ -92,14 +92,18 @@ def get_flight_status(flight_number: str) -> str:
             "flight_iata": flight_number.upper()
         }
         
+        logger.info("[TOOL LOG] Calling AviationStack API...")
         response = requests.get(url, params=params)
         response.raise_for_status()
+        logger.info(f"[TOOL SUCCESS] AviationStack API returned status {response.status_code}")
         data = response.json()
-        
+        logger.info(f"[TOOL LOG] API response data: {data}")
         if "data" not in data or not data["data"]:
+            logger.warning(f"[TOOL WARNING] No flight information found for {flight_number}")
             return f"No flight information found for {flight_number}"
         
         flights = data["data"]
+        logger.info(f"[TOOL SUCCESS] Found {len(flights)} flights")
         results = []
         
         for flight in flights[:3]:  # Limit to 3 results
@@ -112,9 +116,10 @@ def get_flight_status(flight_number: str) -> str:
             results.append(f"Status: {flight.get('flight_status', 'N/A')}")
             results.append("---")
         
+        logger.info("[TOOL SUCCESS] Flight data formatted successfully")
         return "\n".join(results)
     except Exception as e:
-        logger.error(f"Error getting flight status: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception getting flight status: {str(e)}")
         return f"Error getting flight status: {str(e)}"
 
 
@@ -184,7 +189,7 @@ def get_airports_by_city(city: str) -> str:
     Returns:
         Airport information as a formatted string
     """
-    logger.info(f"Fetching airports for city: {city}")
+    logger.info(f"[TOOL CALL] get_airports_by_city called with city: {city}")
     try:
         api_key = os.getenv("AVIATIONSTACK_API_KEY")
         url = f"http://api.aviationstack.com/v1/airports"
@@ -194,14 +199,18 @@ def get_airports_by_city(city: str) -> str:
             "city": city
         }
         
+        logger.info("[TOOL LOG] Calling AviationStack Airports API...")
         response = requests.get(url, params=params)
         response.raise_for_status()
+        logger.info(f"[TOOL SUCCESS] AviationStack API returned status {response.status_code}")
         data = response.json()
         
         if "data" not in data or not data["data"]:
+            logger.warning(f"[TOOL WARNING] No airports found for {city}")
             return f"No airports found for {city}"
         
         airports = data["data"]
+        logger.info(f"[TOOL SUCCESS] Found {len(airports)} airports")
         results = []
         
         for airport in airports[:5]:  # Limit to 5 results
@@ -211,9 +220,10 @@ def get_airports_by_city(city: str) -> str:
             results.append(f"Country: {airport.get('country_name', 'N/A')}")
             results.append("---")
         
+        logger.info("[TOOL SUCCESS] Airport data formatted successfully")
         return "\n".join(results)
     except Exception as e:
-        logger.error(f"Error getting airport information: {str(e)}")
+        logger.error(f"[TOOL ERROR] Exception getting airport information: {str(e)}")
         return f"Error getting airport information: {str(e)}"
 
 
